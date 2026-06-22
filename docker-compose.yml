@@ -1,4 +1,7 @@
 services:
+  # Base de dados PostgreSQL utilizada para:
+  # 1. Armazenar os metadados do Airflow
+  # 2. Persistir os dados processados pelo pipeline ETL
   postgres:
     image: postgres:16
     container_name: dataops-postgres
@@ -6,16 +9,20 @@ services:
       POSTGRES_USER: dataops
       POSTGRES_PASSWORD: dataops
       POSTGRES_DB: dataops
+    # Exposição da porta para acesso local
     ports:
       - "5432:5432"
+    # Persistência dos dados entre reinicializações
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    # Garante que o Airflow só inicia quando o banco estiver disponível
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U dataops -d dataops"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  # Container temporário responsável pela configuração inicial do Airflow
   airflow-init:
     image: apache/airflow:2.10.3-python3.12
     container_name: dataops-airflow-init
@@ -23,16 +30,23 @@ services:
       postgres:
         condition: service_healthy
     environment:
+      # Executor local adequado para ambiente de desenvolvimento
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      # Ligação do Airflow ao PostgreSQL
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://dataops:dataops@postgres:5432/dataops
+      # Não utilizado em ambiente local
       AIRFLOW__CORE__FERNET_KEY: ""
+      # Remove DAGs de exemplo da interface
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      # Necessária para partilha de sessões e visualização de logs
       AIRFLOW__WEBSERVER__SECRET_KEY: "dataops-local-secret-key"
+    # Disponibiliza código e dados locais dentro do container
     volumes:
       - ./dags:/opt/airflow/dags
       - ./pipeline:/opt/airflow/pipeline
       - ./data:/opt/airflow/data
       - ./requirements.txt:/requirements.txt
+    # Instala dependências, inicializa a base do Airflow e cria o utilizador admin
     command: >
       bash -c "pip install -r /requirements.txt &&
       airflow db migrate &&
@@ -44,6 +58,7 @@ services:
       --email admin@example.com
       --password admin || true"
 
+  # Interface web do Airflow
   airflow-webserver:
     image: apache/airflow:2.10.3-python3.12
     container_name: dataops-airflow-webserver
@@ -60,12 +75,14 @@ services:
       - ./pipeline:/opt/airflow/pipeline
       - ./data:/opt/airflow/data
       - ./requirements.txt:/requirements.txt
+    # Interface disponível em http://localhost:8080
     ports:
       - "8080:8080"
     command: >
       bash -c "pip install -r /requirements.txt &&
       airflow webserver"
 
+  # Responsável por monitorizar e executar as DAGs
   airflow-scheduler:
     image: apache/airflow:2.10.3-python3.12
     container_name: dataops-airflow-scheduler
@@ -86,5 +103,6 @@ services:
       bash -c "pip install -r /requirements.txt &&
       airflow scheduler"
 
+# Volume Docker responsável pela persistência do PostgreSQL
 volumes:
   postgres_data:

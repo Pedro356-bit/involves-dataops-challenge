@@ -1,30 +1,48 @@
+# Nome apresentado na interface do GitHub Actions
 name: DataOps CI
 
+# Eventos que acionam o workflow
 on:
+  # Executa automaticamente sempre que existe um push para qualquer branch
   push:
+  # Executa automaticamente quando é criada ou atualizada uma Pull Request
   pull_request:
+  # Permite a execução manual através do separador "Actions" no GitHub
+  workflow_dispatch:
 
 jobs:
+  # Define o nome do job
   validate-and-build:
+    # Sistema operativo utilizado pelo runner do GitHub
     runs-on: ubuntu-latest
 
     steps:
+      # Obtém o código do repositório para o runner
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Instala e configura a versão de Python necessária
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
+      # Instala as dependências utilizadas pelo pipeline ETL
       - name: Install pipeline dependencies
         run: pip install -r requirements.txt
 
+      # Instala as dependências da aplicação FastAPI
       - name: Install app dependencies
         run: pip install -r app/requirements.txt
 
+      # Valida a sintaxe dos ficheiros Python
+      # O comando compila os ficheiros sem os executar
+      # Caso exista algum erro de sintaxe, o workflow falha
       - name: Validate Python syntax
         run: python -m compileall app pipeline dags
 
+      # Constrói a imagem Docker da aplicação
+      # O objetivo é validar que o Dockerfile é funcional
+      # A imagem é criada apenas no runner do GitHub e não é publicada
       - name: Build Docker image
         run: docker build -t dataops-app:ci ./app

@@ -5,11 +5,16 @@ import pandas as pd
 import psycopg2
 
 
+# Configuração de logs estruturados em formato JSON
+# Facilita a observabilidade e a integração com ferramentas de monitorização
 logging.basicConfig(
     level=logging.INFO,
     format='{"timestamp":"%(asctime)s","level":"%(levelname)s","message":"%(message)s"}',
 )
 
+
+# Configuração da ligação ao PostgreSQL
+# O hostname "postgres" corresponde ao nome do serviço definido no docker-compose.yml
 DB_CONFIG = {
     "host": "postgres",
     "database": "dataops",
@@ -22,16 +27,27 @@ DB_CONFIG = {
 def run_pipeline():
     logging.info("Starting DataOps pipeline")
 
+    # ETAPA 1 — EXTRAÇÃO (Extract)
+    # Leitura do ficheiro CSV montado no container do Airflow
     df = pd.read_csv("/opt/airflow/data/sales.csv")
+
     logging.info(f"Extracted {len(df)} rows")
 
+    # ETAPA 2 — TRANSFORMAÇÃO (Transform)
+    # Cálculo do valor total por registo
     df["total"] = df["quantity"] * df["price"]
+
+    # Adição do timestamp de processamento
     df["processed_at"] = datetime.utcnow()
+
     logging.info("Data transformed successfully")
 
+    # ETAPA 3 — CARGA (Load)
+    # Ligação ao PostgreSQL
     conn = psycopg2.connect(**DB_CONFIG)
     cursor = conn.cursor()
 
+    # Criação da tabela caso ainda não exista
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS sales_processed (
             id INTEGER PRIMARY KEY,
@@ -44,6 +60,8 @@ def run_pipeline():
         );
     """)
 
+    # Inserção ou atualização dos dados processados
+    # ON CONFLICT garante idempotência da execução
     for _, row in df.iterrows():
         cursor.execute("""
             INSERT INTO sales_processed
@@ -66,12 +84,16 @@ def run_pipeline():
             row["processed_at"],
         ))
 
+    # Confirma as alterações na base de dados
     conn.commit()
+
+    # Fecha a ligação e liberta recursos
     cursor.close()
     conn.close()
 
     logging.info("Data loaded successfully into PostgreSQL")
 
 
+# Permite executar o pipeline diretamente pela linha de comandos
 if __name__ == "__main__":
     run_pipeline()

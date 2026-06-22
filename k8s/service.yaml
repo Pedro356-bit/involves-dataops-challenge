@@ -1,12 +1,22 @@
+# Versão da API Kubernetes utilizada para recursos do tipo Service
 apiVersion: v1
+# Define que este recurso é um Service
+# O Service expõe a aplicação dentro ou fora do cluster
 kind: Service
 metadata:
+  # Nome do Service
   name: dataops-app-service
 spec:
+  # Selector que liga o Service aos Pods com a label app=dataops-app
   selector:
     app: dataops-app
   ports:
+    # Protocolo utilizado pelo Service
     - protocol: TCP
+      # Porta exposta pelo Service dentro do cluster
       port: 80
+      # Porta do container FastAPI para onde o tráfego será encaminhado
       targetPort: 8000
+  # NodePort permite expor a aplicação fora do cluster local
+  # Também permite testar via kubectl port-forward
   type: NodePort

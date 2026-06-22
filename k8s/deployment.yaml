@@ -1,31 +1,48 @@
+# Versão da API Kubernetes utilizada para recursos do tipo Deployment
 apiVersion: apps/v1
+# Define que este recurso é um Deployment
+# O Deployment gere a criação e atualização dos Pods da aplicação
 kind: Deployment
 metadata:
+  # Nome do Deployment
   name: dataops-app
+  # Labels usadas para identificar este recurso
   labels:
     app: dataops-app
 spec:
+  # Número de réplicas da aplicação
   replicas: 1
+  # Selector utilizado pelo Deployment para encontrar os Pods que ele gere
   selector:
     matchLabels:
       app: dataops-app
+  # Template que define como os Pods serão criados
   template:
     metadata:
+      # Labels aplicadas aos Pods criados por este Deployment
       labels:
         app: dataops-app
     spec:
       containers:
+        # Nome do container dentro do Pod
         - name: dataops-app
+          # Imagem Docker construída localmente no ambiente do Minikube
           image: dataops-app:local
+          # Impede o Kubernetes de tentar buscar a imagem num registry externo
+          # Necessário porque a imagem foi construída localmente
           imagePullPolicy: Never
+          # Porta exposta pela aplicação FastAPI dentro do container
           ports:
             - containerPort: 8000
+          # Readiness probe valida se a aplicação está pronta para receber tráfego
           readinessProbe:
             httpGet:
               path: /health
               port: 8000
             initialDelaySeconds: 5
             periodSeconds: 10
+          # Liveness probe valida se a aplicação continua saudável
+          # Caso falhe repetidamente, o Kubernetes reinicia o container
           livenessProbe:
             httpGet:
               path: /health
