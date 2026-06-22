@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dataops-app
+  labels:
+    app: dataops-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dataops-app
+  template:
+    metadata:
+      labels:
+        app: dataops-app
+    spec:
+      containers:
+        - name: dataops-app
+          image: dataops-app:local
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 20

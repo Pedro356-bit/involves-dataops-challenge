@@ -1,0 +1,28 @@
+
+docker compose down -v
+docker volume ls
+docker compose up -d
+
+http://localhost:8080/
+admin
+admin
+
+docker exec -it dataops-postgres psql -U dataops -d dataops
+SELECT * FROM sales_processed;
+\q
+
+“O Airflow é responsável apenas pela orquestração. O ficheiro CSV representa a camada de ingestão, 
+o script Python implementa a lógica de transformação e persistência, 
+e o PostgreSQL funciona como camada de armazenamento. A DAG coordena a execução do pipeline de ponta a ponta.”
+
+
+
+
+docker images
+eval $(minikube docker-env)
+docker build -t dataops-app:local ./app
+docker images | grep dataops-app
+kubectl apply -f k8s/
+
+eval $(minikube docker-env --unset)
+
