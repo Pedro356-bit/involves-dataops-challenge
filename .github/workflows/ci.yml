@@ -1,0 +1,30 @@
+name: DataOps CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pipeline dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install app dependencies
+        run: pip install -r app/requirements.txt
+
+      - name: Validate Python syntax
+        run: python -m compileall app pipeline dags
+
+      - name: Build Docker image
+        run: docker build -t dataops-app:ci ./app
